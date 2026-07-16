@@ -1,0 +1,563 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Worth it? · Prices in hours of your life</title>
+<meta name="description" content="A Chrome extension that converts every price into hours of your work, right on the page. $149 stops being a number and starts being a Tuesday. Your salary never leaves your browser.">
+<meta property="og:title" content="Worth it? · Prices in hours of your life">
+<meta property="og:description" content="Every price gets a small green pill showing what it costs in hours of your work. Sales, subscriptions and 48 currencies handled. Your salary never leaves your browser.">
+<meta property="og:image" content="https://shahzaibb101.github.io/worth-it-landing/og.png">
+<meta property="og:type" content="website">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 48 48'%3E%3Crect width='48' height='48' rx='11' fill='%231F1D1A'/%3E%3Cg transform='rotate(-8 24 24)'%3E%3Crect x='8' y='14' width='30' height='21' rx='6' fill='%23FBF6EC' stroke='%231F1D1A' stroke-width='2.5'/%3E%3Ccircle cx='14.5' cy='20' r='2.4' fill='%231F1D1A'/%3E%3C/g%3E%3Ccircle cx='33' cy='31' r='8.5' fill='%232E9E63' stroke='%23FBF6EC' stroke-width='2.5'/%3E%3Cpath d='M33 26.5 L33 31 L36.4 33' stroke='%23FBF6EC' stroke-width='2.5' stroke-linecap='round' fill='none'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400..800&family=Space+Grotesk:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --cream:#FBF6EC; --ink:#1F1D1A; --yellow:#FFD84D;
+    --green:oklch(0.62 0.14 158);
+    --green-soft:oklch(0.94 0.045 158);
+    --green-deep:oklch(0.48 0.12 158);
+    --disp:'Bricolage Grotesque',sans-serif;
+    --body:'Space Grotesk',sans-serif;
+    --mono:'IBM Plex Mono',monospace;
+  }
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{margin:0;background:var(--cream);color:var(--ink);font-family:var(--body);overflow-x:hidden}
+  ::selection{background:var(--yellow);color:var(--ink)}
+  a{color:var(--green-deep);text-decoration-thickness:2px;text-underline-offset:3px}
+  a:hover{color:var(--ink)}
+  :focus-visible{outline:3px solid var(--green);outline-offset:3px;border-radius:4px}
+  h1,h2,h3{text-wrap:balance}
+  input,select,button{font-family:inherit}
+
+  @keyframes wi-marquee{from{transform:translateX(0)}to{transform:translateX(-50%)}}
+  @keyframes wi-bob{0%,100%{transform:rotate(2deg) translateY(0)}50%{transform:rotate(2deg) translateY(-8px)}}
+  @keyframes wi-pop{from{transform:scale(.8);opacity:0}to{transform:scale(1);opacity:1}}
+  @keyframes wi-wiggle{0%,100%{transform:rotate(-2deg)}50%{transform:rotate(2deg)}}
+  @keyframes wi-tick{0%,100%{transform:rotate(0)}50%{transform:rotate(8deg)}}
+
+  [data-reveal].wi-hidden{opacity:0;transform:translateY(30px)}
+  [data-reveal].wi-in{opacity:1;transform:none;transition:opacity .7s cubic-bezier(.16,1,.3,1),transform .7s cubic-bezier(.16,1,.3,1)}
+
+  /* the pill, straight from the extension */
+  .wi-pill{display:inline-block;margin-left:8px;padding:2px 11px;font:600 13.5px/1.55 var(--body);color:#1f7a49;background:#eaf7f0;border:2px solid var(--ink);border-radius:999px;white-space:nowrap;vertical-align:middle;cursor:help;box-shadow:2px 2px 0 rgba(31,29,26,.55);transition:transform .12s ease}
+  .wi-pill:hover{transform:translate(-1px,-1px);box-shadow:3px 3px 0 rgba(31,29,26,.55)}
+  [data-pills="off"] .wi-pill{display:none}
+  [data-pills="on"] .wi-pill{animation:wi-pop .35s cubic-bezier(.2,1.4,.4,1) backwards}
+  [data-pills="on"] .wi-item:nth-child(2) .wi-pill{animation-delay:.08s}
+  [data-pills="on"] .wi-item:nth-child(3) .wi-pill{animation-delay:.16s}
+  [data-pills="on"] .wi-item:nth-child(4) .wi-pill{animation-delay:.24s}
+
+  .hv{transition:transform .15s ease,box-shadow .15s ease}
+  .wi-logo:hover .hv-logo{transform:rotate(-7deg) scale(1.08)}
+  .hv-logo{transition:transform .2s ease}
+  .wi-navcta:hover{transform:translate(-2px,-2px);box-shadow:5px 5px 0 var(--ink)}
+  .wi-cta:hover{transform:translate(-3px,-3px);box-shadow:8px 8px 0 var(--green)}
+  .wi-cta-final:hover{transform:translate(-3px,-3px);box-shadow:10px 10px 0 var(--green)}
+  .wi-toggle{transition:transform .15s ease}
+  .wi-toggle:hover{transform:rotate(-2deg) scale(1.04)}
+  .wi-add{transition:transform .12s ease,background .15s ease}
+  .wi-add:hover{transform:translate(-1px,-1px);background:var(--yellow)}
+  .wi-seg button{transition:background .15s ease,color .15s ease}
+  .wi-verdict:hover{transform:translate(-2px,-2px);box-shadow:4px 4px 0 var(--ink)}
+  .wi-verdict{transition:transform .15s ease,box-shadow .15s ease}
+  .wi-coffee{transition:transform .15s ease}
+  .wi-coffee:hover{transform:translate(-1px,-1px)}
+
+  .wi-field{background:#fff;border:2px solid var(--ink);border-radius:10px;padding:9px 12px;font-size:15px;font-weight:600;color:var(--ink)}
+  .wi-field:focus{outline:3px solid var(--green);outline-offset:1px}
+
+  /* receipt zigzag */
+  .wi-receipt{position:relative;background:#fff;border:2px solid var(--ink);border-bottom:none;box-shadow:8px 9px 0 rgba(31,29,26,.12)}
+  .wi-receipt::after{content:"";position:absolute;left:-2px;right:-2px;bottom:-14px;height:14px;
+    background:
+      linear-gradient(-45deg, transparent 10px, #fff 10.5px) 0 0/24px 14px repeat-x,
+      linear-gradient(45deg, transparent 10px, #fff 10.5px) 0 0/24px 14px repeat-x;
+    filter:drop-shadow(0 2.5px 0 var(--ink))}
+
+  @media (prefers-reduced-motion:reduce){
+    *{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}
+    html{scroll-behavior:auto}
+    [data-reveal].wi-hidden{opacity:1;transform:none}
+  }
+</style>
+</head>
+<body>
+<div style="min-height:100vh;overflow-x:clip">
+
+  <!-- NAV -->
+  <nav style="display:flex;align-items:center;justify-content:space-between;gap:16px;padding:20px clamp(20px,5vw,56px);max-width:1240px;margin:0 auto">
+    <a href="#top" class="wi-logo" style="display:flex;align-items:center;gap:10px;font-family:var(--disp);font-weight:800;font-size:24px;letter-spacing:-.5px;text-decoration:none;color:var(--ink)">
+      <span class="hv-logo" style="display:inline-flex">
+        <svg viewBox="0 0 48 48" width="40" height="40" role="img" aria-label="Worth it? logo">
+          <rect width="48" height="48" rx="11" fill="#1F1D1A"/>
+          <g transform="rotate(-8 24 24)"><rect x="8" y="14" width="30" height="21" rx="6" fill="#FBF6EC" stroke="#1F1D1A" stroke-width="2.5"/><circle cx="14.5" cy="20" r="2.4" fill="#1F1D1A"/></g>
+          <circle cx="33" cy="31" r="8.5" fill="oklch(0.62 0.14 158)" stroke="#FBF6EC" stroke-width="2.5"/>
+          <path d="M33 26.5 L33 31 L36.4 33" stroke="#FBF6EC" stroke-width="2.5" stroke-linecap="round" fill="none"/>
+        </svg>
+      </span>Worth it?
+    </a>
+    <a class="hv wi-navcta" href="https://chromewebstore.google.com/detail/jepdbkcgflhmfpkfdpifckgkbnalpafd" target="_blank" rel="noopener" style="font-weight:600;font-size:15px;color:var(--ink);text-decoration:none;background:var(--cream);border:2px solid var(--ink);border-radius:999px;padding:9px 18px;box-shadow:3px 3px 0 var(--ink)">Add to Chrome</a>
+  </nav>
+
+  <!-- HERO -->
+  <header id="top" style="max-width:1240px;margin:0 auto;padding:clamp(28px,6vw,72px) clamp(20px,5vw,56px) 0;text-align:center">
+    <p data-reveal style="font-family:var(--mono);font-size:13px;letter-spacing:2px;text-transform:uppercase;color:var(--green-deep);margin:0 0 18px">A Chrome extension for the moment before you buy</p>
+    <h1 data-reveal style="font-family:var(--disp);font-weight:800;font-size:clamp(42px,7.5vw,96px);line-height:1.02;letter-spacing:-.02em;margin:0 auto;max-width:16ch">
+      You don&rsquo;t pay with money. You pay with
+      <span style="position:relative;display:inline-block;white-space:nowrap">
+        <span style="position:relative;z-index:1;padding:0 .12em">your hours.</span>
+        <span aria-hidden="true" style="position:absolute;inset:8% -2% 4%;background:var(--yellow);transform:rotate(-1.6deg);border-radius:6px;z-index:0"></span>
+      </span>
+    </h1>
+    <p data-reveal style="font-size:clamp(17px,2vw,21px);line-height:1.55;max-width:56ch;margin:24px auto 0;color:#4A453C;text-wrap:pretty">Worth it? puts a small green pill next to every price on the internet, showing what it costs in <strong>hours of your work</strong>. $149 stops being a number and starts being a Tuesday.</p>
+    <div data-reveal style="display:flex;flex-wrap:wrap;gap:16px;justify-content:center;align-items:center;margin-top:32px">
+      <a class="hv wi-cta" href="https://chromewebstore.google.com/detail/jepdbkcgflhmfpkfdpifckgkbnalpafd" target="_blank" rel="noopener" style="font-family:var(--disp);font-weight:700;font-size:19px;color:var(--cream);background:var(--ink);text-decoration:none;border-radius:999px;padding:16px 30px;box-shadow:5px 5px 0 var(--green);display:inline-flex;align-items:center;gap:10px">Add to Chrome <span style="font-weight:500;opacity:.75;font-size:16px">(free)</span></a>
+      <a href="#shop" style="font-weight:600;font-size:16px">or window shop the fake store first ↓</a>
+    </div>
+  </header>
+
+  <!-- INTERACTIVE SHOP -->
+  <section id="shop" aria-label="Interactive demo: a fake shop with real math" style="max-width:1240px;margin:0 auto;padding:clamp(48px,7vw,88px) clamp(20px,5vw,56px) 20px;display:flex;justify-content:center">
+    <div style="position:relative;width:min(860px,100%)">
+      <div aria-hidden="true" style="position:absolute;top:-46px;right:clamp(0px,4vw,24px);font-family:var(--mono);font-size:14px;color:var(--green-deep);animation:wi-bob 3s ease-in-out infinite;z-index:3">flip the switch, then hover a pill ↘</div>
+
+      <button id="wi-toggle" class="wi-toggle" role="switch" aria-checked="false" aria-label="Worth it? extension toggle" style="position:absolute;top:-22px;left:clamp(0px,3vw,18px);z-index:3;display:flex;align-items:center;gap:10px;background:var(--cream);border:2px solid var(--ink);border-radius:999px;padding:8px 14px;cursor:pointer;font-family:var(--mono);font-size:13px;font-weight:500;box-shadow:3px 3px 0 var(--ink);transform:rotate(-2deg)">
+        <span style="letter-spacing:1px">WORTH&nbsp;IT?</span>
+        <span aria-hidden="true" id="wi-track" style="display:inline-block;width:40px;height:22px;border-radius:999px;background:#D8D1C0;border:2px solid var(--ink);position:relative;transition:background .25s ease"><span id="wi-knob" style="position:absolute;top:1px;left:1px;width:16px;height:16px;border-radius:50%;background:var(--cream);border:1px solid var(--ink);transition:left .22s cubic-bezier(.3,1.4,.6,1)"></span></span>
+        <span id="wi-onlabel" style="color:#B9B2A2;font-weight:700;min-width:28px;text-align:left">OFF</span>
+      </button>
+
+      <div style="background:#fff;border:2px solid var(--ink);border-radius:16px;box-shadow:8px 10px 0 rgba(31,29,26,.12),0 30px 60px rgba(31,29,26,.12);transform:rotate(-.8deg);overflow:hidden">
+        <!-- fake browser bar -->
+        <div style="display:flex;align-items:center;gap:10px;padding:12px 16px;border-bottom:2px solid var(--ink);background:var(--green-soft)">
+          <span aria-hidden="true" style="display:inline-flex;gap:6px"><span style="width:11px;height:11px;border-radius:50%;background:#E8896B;border:1.5px solid var(--ink)"></span><span style="width:11px;height:11px;border-radius:50%;background:var(--yellow);border:1.5px solid var(--ink)"></span><span style="width:11px;height:11px;border-radius:50%;background:var(--green);border:1.5px solid var(--ink)"></span></span>
+          <span style="flex:1;font-family:var(--mono);font-size:12.5px;background:#fff;border:1.5px solid var(--ink);border-radius:999px;padding:5px 14px;color:#6B6557;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">goods-and-such.com/definitely-need-all-of-this</span>
+        </div>
+
+        <!-- rate row -->
+        <div style="display:flex;flex-wrap:wrap;align-items:center;gap:10px;padding:16px 20px;border-bottom:1px solid #EDE7DA;background:var(--cream)">
+          <span style="font-family:var(--mono);font-size:12px;letter-spacing:1px;text-transform:uppercase;color:#8A8375">You make</span>
+          <input id="wi-rate" class="wi-field" type="number" inputmode="decimal" min="0" value="25" aria-label="Your pay" style="width:104px">
+          <select id="wi-cur" class="wi-field" aria-label="Your currency">
+            <option value="USD">USD $</option><option value="PKR">PKR Rs</option><option value="EUR">EUR €</option><option value="GBP">GBP £</option><option value="INR">INR ₹</option>
+          </select>
+          <select id="wi-mode" class="wi-field" aria-label="Pay period">
+            <option value="hourly">per hour</option><option value="yearly">per year</option>
+          </select>
+          <span style="flex:1"></span>
+          <span class="wi-seg" role="radiogroup" aria-label="Attitude" style="display:inline-flex;border:2px solid var(--ink);border-radius:999px;overflow:hidden;background:#fff">
+            <button data-sass="0" role="radio" aria-checked="false" style="border:none;background:none;padding:8px 14px;font-size:13.5px;font-weight:700;cursor:pointer;color:var(--ink)">gentle</button>
+            <button data-sass="1" role="radio" aria-checked="true" style="border:none;background:var(--ink);color:var(--cream);padding:8px 14px;font-size:13.5px;font-weight:700;cursor:pointer">cheeky</button>
+            <button data-sass="2" role="radio" aria-checked="false" style="border:none;background:none;padding:8px 14px;font-size:13.5px;font-weight:700;cursor:pointer;color:var(--ink)">brutal</button>
+          </span>
+        </div>
+
+        <!-- products -->
+        <div id="wi-shop" data-pills="off" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(180px,100%),1fr));gap:16px;padding:20px">
+          <!-- items injected by JS -->
+        </div>
+
+        <!-- cart bar -->
+        <div style="display:flex;flex-wrap:wrap;align-items:center;gap:12px;padding:14px 20px;border-top:2px solid var(--ink);background:var(--cream)">
+          <span aria-hidden="true" style="font-size:19px">🛒</span>
+          <span id="wi-cartline" role="status" style="font-size:15px;font-weight:600;color:#4A453C">cart: empty. your hours are safe.</span>
+          <span style="flex:1"></span>
+          <button id="wi-verdict" class="wi-verdict" style="display:none;font-family:var(--disp);font-weight:700;font-size:15px;padding:10px 18px;border-radius:999px;border:2px solid var(--ink);background:var(--yellow);color:var(--ink);cursor:pointer;box-shadow:2px 2px 0 var(--ink)">so&hellip; worth it?</button>
+          <button id="wi-empty" style="display:none;font-size:13px;font-weight:600;border:none;background:none;color:#8A8375;cursor:pointer;text-decoration:underline;text-underline-offset:3px">empty it</button>
+        </div>
+      </div>
+
+      <p id="wi-nudge" role="status" style="display:none;text-align:center;margin:18px 0 0;font-family:var(--mono);font-size:14px;color:var(--green-deep);animation:wi-pop .3s ease"></p>
+    </div>
+  </section>
+
+  <!-- MARQUEE -->
+  <div aria-hidden="true" style="margin:clamp(40px,6vw,72px) 0 0;background:var(--ink);color:var(--cream);transform:rotate(-1deg) scale(1.02);overflow:hidden;padding:13px 0">
+    <div style="display:flex;width:max-content;animation:wi-marquee 28s linear infinite;font-family:var(--mono);font-size:14px;letter-spacing:1.5px;text-transform:uppercase">
+      <span style="white-space:nowrap;padding-right:32px">Your salary never leaves this browser ✦ No account ✦ No tracking ✦ 48 currencies ✦ Sales handled ✦ Subscriptions marked ✦ Shops only ✦&nbsp;</span>
+      <span style="white-space:nowrap;padding-right:32px">Your salary never leaves this browser ✦ No account ✦ No tracking ✦ 48 currencies ✦ Sales handled ✦ Subscriptions marked ✦ Shops only ✦&nbsp;</span>
+    </div>
+  </div>
+
+  <!-- RUDE MATH -->
+  <section style="max-width:1240px;margin:0 auto;padding:clamp(64px,9vw,120px) clamp(20px,5vw,56px) 0">
+    <h2 data-reveal style="font-family:var(--disp);font-weight:800;font-size:clamp(30px,4.5vw,52px);letter-spacing:-.02em;margin:0 0 10px">The math is rude on purpose.</h2>
+    <p data-reveal style="margin:0 0 36px;color:#4A453C;font-size:17px;max-width:58ch">Your brain is great at ignoring numbers with currency signs. It is terrible at ignoring its own lifespan. We exploit that.</p>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(260px,100%),1fr));gap:20px">
+      <div data-reveal style="background:#fff;border:2px solid var(--ink);border-radius:14px;padding:26px 24px;transform:rotate(-.8deg);box-shadow:4px 5px 0 rgba(31,29,26,.1)">
+        <div style="font-family:var(--mono);font-size:12px;color:#B9B2A2;margin-bottom:12px">exhibit 01 · at $15/hour</div>
+        <h3 style="font-family:var(--disp);font-weight:700;font-size:22px;margin:0 0 8px">The $6.50 daily latte</h3>
+        <p style="margin:0;color:#4A453C;line-height:1.5">26 minutes of work. Every day. You are the barista&rsquo;s barista.</p>
+      </div>
+      <div data-reveal style="background:#fff;border:2px solid var(--ink);border-radius:14px;padding:26px 24px;transform:rotate(.9deg);box-shadow:4px 5px 0 rgba(31,29,26,.1)">
+        <div style="font-family:var(--mono);font-size:12px;color:#B9B2A2;margin-bottom:12px">exhibit 02 · at $25/hour</div>
+        <h3 style="font-family:var(--disp);font-weight:700;font-size:22px;margin:0 0 8px">The $1,199 new phone</h3>
+        <p style="margin:0;color:#4A453C;line-height:1.5">Six work weeks. For the one with the slightly better camera than the one in your pocket.</p>
+      </div>
+      <div data-reveal style="background:#fff;border:2px solid var(--ink);border-radius:14px;padding:26px 24px;transform:rotate(-.5deg);box-shadow:4px 5px 0 rgba(31,29,26,.1)">
+        <div style="font-family:var(--mono);font-size:12px;color:#B9B2A2;margin-bottom:12px">exhibit 03 · at any rate</div>
+        <h3 style="font-family:var(--disp);font-weight:700;font-size:22px;margin:0 0 8px">The $9.99 subscription</h3>
+        <p style="margin:0;color:#4A453C;line-height:1.5">Small pill, but it says <span style="font-family:var(--mono);font-size:15px">/mo</span>. Because it bites you every single month, forever, until you die or unsubscribe.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- HOW IT WORKS -->
+  <section style="max-width:1240px;margin:0 auto;padding:clamp(64px,9vw,120px) clamp(20px,5vw,56px) 0">
+    <h2 data-reveal style="font-family:var(--disp);font-weight:800;font-size:clamp(30px,4.5vw,52px);letter-spacing:-.02em;margin:0 0 10px">Three steps. One of them is yours.</h2>
+    <p data-reveal style="margin:0 0 40px;color:#4A453C;font-size:17px;max-width:60ch">Install it, tell it one number, and go back to your life. The pills handle themselves.</p>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(280px,100%),1fr));gap:clamp(20px,3vw,36px)">
+      <div data-reveal style="display:flex;flex-direction:column;gap:12px">
+        <div style="font-family:var(--disp);font-weight:800;font-size:56px;color:var(--green);line-height:1">1</div>
+        <h3 style="font-family:var(--disp);font-weight:700;font-size:24px;margin:0">Tell it what you make</h3>
+        <p style="margin:0;color:#4A453C;line-height:1.6">Hourly rate or yearly salary, in any of 48 currencies. It guesses yours from your timezone and you can correct it. The number is saved on your device and goes nowhere, ever.</p>
+      </div>
+      <div data-reveal style="display:flex;flex-direction:column;gap:12px">
+        <div style="font-family:var(--disp);font-weight:800;font-size:56px;color:var(--green);line-height:1">2</div>
+        <h3 style="font-family:var(--disp);font-weight:700;font-size:24px;margin:0">It does rude arithmetic</h3>
+        <p style="margin:0;color:#4A453C;line-height:1.6">On shop pages, every price is divided by your rate, right where it stands. Sale prices win over crossed out theater, subscriptions get marked per month, and foreign currencies convert with daily rates.</p>
+      </div>
+      <div data-reveal style="display:flex;flex-direction:column;gap:12px">
+        <div style="font-family:var(--disp);font-weight:800;font-size:56px;color:var(--green);line-height:1">3</div>
+        <h3 style="font-family:var(--disp);font-weight:700;font-size:24px;margin:0">You buy on purpose</h3>
+        <p style="margin:0;color:#4A453C;line-height:1.6">Some things are absolutely worth the hours. Plenty of things are not. The whole trick is being able to tell which is which before the checkout button, not after.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- RECEIPT: what it refuses to badge -->
+  <section style="max-width:1240px;margin:0 auto;padding:clamp(64px,9vw,120px) clamp(20px,5vw,56px) 0;display:grid;grid-template-columns:repeat(auto-fit,minmax(min(320px,100%),1fr));gap:clamp(28px,4vw,56px);align-items:center">
+    <div data-reveal>
+      <h2 style="font-family:var(--disp);font-weight:800;font-size:clamp(30px,4.5vw,52px);letter-spacing:-.02em;margin:0 0 14px">It knows when to shut up.</h2>
+      <p style="margin:0 0 12px;color:#4A453C;font-size:17px;line-height:1.6">A wrong badge is worse than no badge, so the engine is picky on purpose. Marketing theater, UI furniture and your own dashboards get nothing.</p>
+      <p style="margin:0;color:#4A453C;font-size:17px;line-height:1.6">Every line on this receipt is a real rule, battle tested on real stores. The receipt is longer than most extensions&rsquo; entire logic. We are weirdly proud of it.</p>
+    </div>
+    <div data-reveal style="display:flex;justify-content:center">
+      <div class="wi-receipt" style="width:min(380px,100%);transform:rotate(1.2deg);padding:26px 26px 30px;font-family:var(--mono)">
+        <div style="text-align:center;border-bottom:2px dashed #D8D1C0;padding-bottom:14px;margin-bottom:14px">
+          <div style="font-size:15px;font-weight:500;letter-spacing:2px">WORTH IT?</div>
+          <div style="font-size:11px;color:#8A8375;margin-top:4px">THINGS WE REFUSE TO BADGE</div>
+        </div>
+        <div style="font-size:12.5px;line-height:2.15;color:#4A453C">
+          <div style="display:flex;justify-content:space-between;gap:10px"><span>crossed out &ldquo;was&rdquo; prices</span><span>SKIP</span></div>
+          <div style="display:flex;justify-content:space-between;gap:10px"><span>price range sliders</span><span>SKIP</span></div>
+          <div style="display:flex;justify-content:space-between;gap:10px"><span>&ldquo;up to 70% off&rdquo; banners</span><span>SKIP</span></div>
+          <div style="display:flex;justify-content:space-between;gap:10px"><span>coupon and promo bait</span><span>SKIP</span></div>
+          <div style="display:flex;justify-content:space-between;gap:10px"><span>&ldquo;$12,200+&rdquo; filters</span><span>SKIP</span></div>
+          <div style="display:flex;justify-content:space-between;gap:10px"><span>&ldquo;14+ sold&rdquo; counters</span><span>SKIP</span></div>
+          <div style="display:flex;justify-content:space-between;gap:10px"><span>per ounce unit prices</span><span>SKIP</span></div>
+          <div style="display:flex;justify-content:space-between;gap:10px"><span>installment come-ons</span><span>SKIP</span></div>
+          <div style="display:flex;justify-content:space-between;gap:10px"><span>dates that look like ranges</span><span>SKIP</span></div>
+          <div style="display:flex;justify-content:space-between;gap:10px"><span>your finance dashboard</span><span>SKIP</span></div>
+          <div style="display:flex;justify-content:space-between;gap:10px"><span>news articles with numbers</span><span>SKIP</span></div>
+        </div>
+        <div style="border-top:2px dashed #D8D1C0;margin-top:14px;padding-top:12px;font-size:13px;display:flex;justify-content:space-between;font-weight:500"><span>WRONG BADGES</span><span>0.00</span></div>
+        <div style="text-align:center;font-size:10.5px;color:#B9B2A2;margin-top:14px;letter-spacing:1px">90 UNIT TESTS · 45 DOM CASES · ALL GREEN<br>THANK YOU FOR NOT SHOPPING</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- PRIVACY -->
+  <section style="max-width:1240px;margin:clamp(64px,9vw,120px) auto 0;padding:0 clamp(20px,5vw,56px)">
+    <div data-reveal style="position:relative;background:var(--ink);color:var(--cream);border-radius:24px;padding:clamp(36px,6vw,72px) clamp(24px,5vw,64px);text-align:center">
+      <span aria-hidden="true" style="position:absolute;top:-18px;right:clamp(12px,5vw,48px);background:var(--yellow);color:var(--ink);border:2px solid var(--ink);border-radius:999px;padding:9px 16px;font-family:var(--mono);font-size:12px;font-weight:500;letter-spacing:.5px;transform:rotate(4deg);box-shadow:3px 3px 0 rgba(31,29,26,.35);animation:wi-wiggle 5s ease-in-out infinite">pinky promise</span>
+      <h2 style="font-family:var(--disp);font-weight:800;font-size:clamp(30px,5vw,60px);letter-spacing:-.02em;margin:0 0 16px">Your salary never leaves this browser.</h2>
+      <p style="margin:0 auto 30px;max-width:54ch;font-size:17px;line-height:1.6;color:#C9C2B2;text-wrap:pretty">No servers, no account, no analytics. Your rate lives in local storage on your machine. The only thing Worth it? ever downloads is a public exchange rate table, and it is the same table for everyone on earth.</p>
+      <div style="display:flex;flex-wrap:wrap;gap:12px;justify-content:center">
+        <span style="font-family:var(--mono);font-size:13px;letter-spacing:1px;border:1.5px solid #5A5344;border-radius:999px;padding:9px 18px;transform:rotate(-1.5deg)">NO SERVERS</span>
+        <span style="font-family:var(--mono);font-size:13px;letter-spacing:1px;border:1.5px solid #5A5344;border-radius:999px;padding:9px 18px;transform:rotate(1deg)">NO ACCOUNT</span>
+        <span style="font-family:var(--mono);font-size:13px;letter-spacing:1px;border:1.5px solid #5A5344;border-radius:999px;padding:9px 18px;transform:rotate(-.8deg)">NO TRACKING</span>
+        <span style="font-family:var(--mono);font-size:13px;letter-spacing:1px;border:1.5px solid #5A5344;border-radius:999px;padding:9px 18px;transform:rotate(1.4deg)">NO AI JUDGING YOUR CART. ONLY YOU.</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- CTA -->
+  <section style="max-width:1240px;margin:0 auto;padding:clamp(72px,10vw,140px) clamp(20px,5vw,56px);text-align:center">
+    <h2 data-reveal style="font-family:var(--disp);font-weight:800;font-size:clamp(40px,7.5vw,100px);letter-spacing:-.02em;line-height:1.02;margin:0 0 26px">Buy it if it&rsquo;s worth the hours.</h2>
+    <div data-reveal>
+      <a class="hv wi-cta-final" href="https://chromewebstore.google.com/detail/jepdbkcgflhmfpkfdpifckgkbnalpafd" target="_blank" rel="noopener" style="font-family:var(--disp);font-weight:700;font-size:clamp(19px,2.5vw,24px);color:var(--cream);background:var(--ink);text-decoration:none;border-radius:999px;padding:20px 40px;box-shadow:6px 6px 0 var(--green);display:inline-flex;align-items:center;gap:10px">Add to Chrome <span style="font-weight:500;opacity:.75">(free)</span></a>
+      <p style="margin:20px 0 0;font-family:var(--mono);font-size:13px;color:#8A8375">Free. No account. Rude within seconds of installing.</p>
+    </div>
+  </section>
+
+  <!-- FOOTER -->
+  <div style="border-top:2px solid var(--ink)">
+    <footer style="padding:22px clamp(20px,5vw,56px);display:flex;flex-wrap:wrap;gap:14px;justify-content:space-between;align-items:center;max-width:1240px;margin:0 auto">
+      <span style="display:inline-flex;align-items:center;gap:8px;font-family:var(--disp);font-weight:700">
+        <svg viewBox="0 0 48 48" width="26" height="26" aria-hidden="true"><rect width="48" height="48" rx="11" fill="#1F1D1A"/><g transform="rotate(-8 24 24)"><rect x="8" y="14" width="30" height="21" rx="6" fill="#FBF6EC" stroke="#1F1D1A" stroke-width="2.5"/><circle cx="14.5" cy="20" r="2.4" fill="#1F1D1A"/></g><circle cx="33" cy="31" r="8.5" fill="oklch(0.62 0.14 158)" stroke="#FBF6EC" stroke-width="2.5"/><path d="M33 26.5 L33 31 L36.4 33" stroke="#FBF6EC" stroke-width="2.5" stroke-linecap="round" fill="none"/></svg>
+        Worth it?
+      </span>
+      <span style="font-size:14px;color:#6B6557">By the people who made <a href="https://pixlift.xyz" target="_blank" rel="noopener">Pixlift</a>. We make small tools that side with you.</span>
+      <span style="display:inline-flex;gap:14px;align-items:center">
+        <a href="privacy.html" style="font-size:14px;font-weight:600">Privacy</a>
+        <a class="wi-coffee" href="https://buymeacoffee.com/shahzaibb" target="_blank" rel="noopener" style="font-size:14px;font-weight:600;text-decoration:none;border:2px solid var(--ink);border-radius:999px;padding:7px 14px;color:var(--ink);background:var(--yellow);box-shadow:2px 2px 0 var(--ink)">Buy me a coffee ☕</a>
+      </span>
+    </footer>
+  </div>
+</div>
+
+<!-- transient UI -->
+<div id="wi-tip" role="status" style="display:none;position:fixed;z-index:60;max-width:270px;padding:10px 14px;font:500 13.5px/1.45 var(--body);color:var(--cream);background:var(--ink);border-radius:10px;box-shadow:0 10px 28px rgba(31,29,26,.35);pointer-events:none;animation:wi-pop .18s ease"></div>
+<div id="wi-toast" role="status" style="display:none;position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:var(--ink);color:var(--cream);font-size:14px;font-weight:500;padding:12px 22px;border-radius:999px;box-shadow:0 12px 30px rgba(31,29,26,.3);z-index:60;animation:wi-pop .25s ease;max-width:88vw;text-align:center"></div>
+<div id="wi-confetti" style="position:fixed;inset:0;pointer-events:none;z-index:70;overflow:hidden"></div>
+
+<script>
+(function(){
+  var reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  var $ = function(id){ return document.getElementById(id); };
+
+  /* ---- the real math, ported from the extension ---- */
+  var FX = { USD:1, PKR:280, EUR:0.92, GBP:0.79, INR:83 };
+  function convert(amount, from, to){
+    if(from===to) return amount;
+    return amount / FX[from] * FX[to];
+  }
+  function fmtHours(h){
+    if(h < 1) return Math.max(1, Math.round(h*60)) + ' min';
+    if(h < 100){ var r = Math.round(h*10)/10; return (r%1===0 ? r.toFixed(0) : r.toFixed(1)) + 'h'; }
+    var days = h/8;
+    if(days < 99) return Math.round(days) + ' workdays';
+    return Math.round(days/5) + ' work weeks';
+  }
+  var SASS = [
+    [ 'About {h} of your work.', 'That is {h} at your desk.', 'Roughly {h} of effort.', 'You would work {h} for this.' ],
+    [ '{h} of your life. Choose wisely.', 'That is {h} of meetings.', 'Worth {h} of Monday?', 'Costs {h} of pretending to be busy.' ],
+    [ '{h} of your finite existence.', '{h}. The item will not love you back.', 'Buy it and {h} of your life quietly evaporates.', 'That is {h} you are never getting back.' ]
+  ];
+
+  /* ---- state ---- */
+  var state = { on:false, sass:1, mode:'hourly', rate:25, cur:'USD', cart:[] };
+
+  /* ---- products ---- */
+  var ITEMS = [
+    { name:'big honest headphones', art:'linear-gradient(140deg,#CFE8FF,#9BB8FF)', emoji:'🎧', price:49.99, cur:'USD' },
+    { name:'retro runners', art:'linear-gradient(150deg,#FFE1CF,#FFB48A)', emoji:'👟', price:79, was:120, cur:'USD' },
+    { name:'streaming plus', art:'linear-gradient(135deg,#E4D9FF,#C4AEFF)', emoji:'📺', price:9.99, cur:'USD', period:'mo' },
+    { name:'imported hoodie', art:'linear-gradient(145deg,#D9F2E2,#A9E2C0)', emoji:'🧥', price:6990, cur:'PKR' }
+  ];
+
+  function effRate(){
+    var v = state.rate;
+    if(!(v > 0)) return 0;
+    return state.mode === 'yearly' ? v/2080 : v;
+  }
+  function hoursFor(amount, cur){
+    var r = effRate();
+    if(r <= 0) return null;
+    return convert(amount, cur, state.cur) / r;
+  }
+  function sassLine(amount, h, period){
+    var lines = SASS[state.sass];
+    var line = lines[Math.abs(Math.floor(amount*100)) % lines.length].replace('{h}', fmtHours(h));
+    if(period) line += ' Every single month.';
+    return line;
+  }
+  function money(amount, cur){
+    var sym = { USD:'$', PKR:'Rs ', EUR:'€', GBP:'£', INR:'₹' }[cur];
+    var s = amount % 1 === 0 ? amount.toLocaleString('en-US') : amount.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
+    return sym + s;
+  }
+
+  /* ---- render shop ---- */
+  var shop = $('wi-shop');
+  ITEMS.forEach(function(it, i){
+    var card = document.createElement('div');
+    card.className = 'wi-item';
+    card.style.cssText = 'border:2px solid var(--ink);border-radius:14px;overflow:hidden;background:#fff;display:flex;flex-direction:column';
+    card.innerHTML =
+      '<div aria-hidden="true" style="height:110px;display:flex;align-items:center;justify-content:center;font-size:52px;background:'+it.art+';border-bottom:2px solid var(--ink)">'+it.emoji+'</div>'+
+      '<div style="padding:12px 14px 14px;display:flex;flex-direction:column;gap:8px;flex:1">'+
+        '<div style="font-size:12.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase">'+it.name+'</div>'+
+        '<div style="display:flex;align-items:center;flex-wrap:wrap;gap:2px;min-height:30px">'+
+          (it.was ? '<span style="font-size:13.5px;color:#B9B2A2;text-decoration:line-through;margin-right:7px">'+money(it.was,it.cur)+'</span>' : '')+
+          '<span style="font-family:var(--disp);font-weight:800;font-size:19px">'+money(it.price,it.cur)+(it.period?'<span style="font-size:13px;font-weight:600">/'+it.period+'</span>':'')+'</span>'+
+          '<span class="wi-pill" data-i="'+i+'" tabindex="0" role="note" aria-label="price in hours of your life"></span>'+
+        '</div>'+
+        '<button class="wi-add" data-add="'+i+'" style="margin-top:auto;font-weight:700;font-size:13.5px;padding:9px 12px;border-radius:10px;border:2px solid var(--ink);background:var(--cream);cursor:pointer;box-shadow:2px 2px 0 var(--ink)">add to cart</button>'+
+      '</div>';
+    shop.appendChild(card);
+  });
+  var pills = [].slice.call(document.querySelectorAll('.wi-pill'));
+
+  function renderPills(){
+    pills.forEach(function(p){
+      var it = ITEMS[+p.getAttribute('data-i')];
+      var h = hoursFor(it.price, it.cur);
+      p.textContent = h === null ? 'set your rate' : '≈ ' + fmtHours(h) + (it.period ? ' /' + it.period : '');
+    });
+  }
+
+  /* ---- toggle ---- */
+  var toggle = $('wi-toggle'), track = $('wi-track'), knob = $('wi-knob'), onLabel = $('wi-onlabel'), nudge = $('wi-nudge');
+  function renderToggle(){
+    toggle.setAttribute('aria-checked', state.on);
+    track.style.background = state.on ? 'oklch(0.62 0.14 158)' : '#D8D1C0';
+    knob.style.left = state.on ? '19px' : '1px';
+    onLabel.textContent = state.on ? 'ON' : 'OFF';
+    onLabel.style.color = state.on ? 'oklch(0.48 0.12 158)' : '#B9B2A2';
+    shop.setAttribute('data-pills', state.on ? 'on' : 'off');
+  }
+  var timers = {};
+  function flash(el, val, ms){
+    clearTimeout(timers[el.id]);
+    el.textContent = val;
+    el.style.display = 'block';
+    if(el===toast) el.style.display='inline-block';
+    timers[el.id] = setTimeout(function(){ el.style.display='none'; }, ms);
+  }
+  toggle.addEventListener('click', function(){
+    state.on = !state.on;
+    renderPills();
+    renderToggle();
+    flash(nudge, state.on ? 'There they are. Hover one. It has opinions.' : 'Back to blissful ignorance.', 4200);
+  });
+
+  /* ---- rate controls ---- */
+  var rateIn = $('wi-rate'), curSel = $('wi-cur'), modeSel = $('wi-mode');
+  rateIn.addEventListener('input', function(){ state.rate = parseFloat(rateIn.value)||0; renderPills(); renderCart(); });
+  curSel.addEventListener('change', function(){ state.cur = curSel.value; renderPills(); renderCart(); });
+  modeSel.addEventListener('change', function(){
+    state.mode = modeSel.value;
+    if(state.mode==='yearly' && state.rate < 1000){ state.rate = 52000; rateIn.value = 52000; }
+    if(state.mode==='hourly' && state.rate >= 1000){ state.rate = 25; rateIn.value = 25; }
+    renderPills(); renderCart();
+  });
+
+  /* ---- attitude ---- */
+  [].slice.call(document.querySelectorAll('[data-sass]')).forEach(function(b){
+    b.addEventListener('click', function(){
+      state.sass = +b.getAttribute('data-sass');
+      [].slice.call(document.querySelectorAll('[data-sass]')).forEach(function(x){
+        var on = x===b;
+        x.setAttribute('aria-checked', on);
+        x.style.background = on ? 'var(--ink)' : 'none';
+        x.style.color = on ? 'var(--cream)' : 'var(--ink)';
+      });
+      if(state.on) flash(nudge, ['Gentle. Like a concerned friend.','Cheeky. The default, for a reason.','Brutal. You asked for this.'][state.sass], 3200);
+    });
+  });
+
+  /* ---- tooltip ---- */
+  var tip = $('wi-tip');
+  function showTip(p){
+    if(!state.on) return;
+    var it = ITEMS[+p.getAttribute('data-i')];
+    var h = hoursFor(it.price, it.cur);
+    if(h===null) { tip.textContent = 'Type your rate up there first.'; }
+    else tip.textContent = sassLine(convert(it.price, it.cur, state.cur), h, it.period);
+    tip.style.display = 'block';
+    var r = p.getBoundingClientRect();
+    tip.style.left = Math.min(r.left, innerWidth - 290) + 'px';
+    tip.style.top = (r.bottom + 9) + 'px';
+  }
+  function hideTip(){ tip.style.display = 'none'; }
+  document.addEventListener('mouseover', function(e){
+    var p = e.target.closest && e.target.closest('.wi-pill');
+    if(p) showTip(p); else hideTip();
+  });
+  document.addEventListener('focusin', function(e){
+    if(e.target.classList && e.target.classList.contains('wi-pill')) showTip(e.target); else hideTip();
+  });
+  window.addEventListener('scroll', hideTip, {passive:true});
+
+  /* ---- cart ---- */
+  var cartline = $('wi-cartline'), verdictBtn = $('wi-verdict'), emptyBtn = $('wi-empty'), toast = $('wi-toast');
+  shop.addEventListener('click', function(e){
+    var b = e.target.closest('[data-add]'); if(!b) return;
+    state.cart.push(+b.getAttribute('data-add'));
+    b.textContent = 'added ✓';
+    setTimeout(function(){ b.textContent = 'add to cart'; }, 1200);
+    renderCart();
+  });
+  function cartTotals(){
+    var total = 0, subs = 0;
+    state.cart.forEach(function(i){
+      var it = ITEMS[i];
+      total += convert(it.price, it.cur, state.cur);
+      if(it.period) subs++;
+    });
+    return { total: total, subs: subs };
+  }
+  function renderCart(){
+    var n = state.cart.length;
+    if(n===0){
+      cartline.innerHTML = 'cart: empty. your hours are safe.';
+      verdictBtn.style.display = 'none'; emptyBtn.style.display = 'none';
+      return;
+    }
+    var t = cartTotals();
+    var r = effRate();
+    var hrs = r>0 ? t.total/r : null;
+    cartline.innerHTML = 'cart: ' + n + (n===1?' item':' items') + ' · <strong>' + money(Math.round(t.total*100)/100, state.cur) + '</strong>' +
+      (hrs!==null ? ' <span class="wi-pill" style="display:inline-block;cursor:default;margin-left:6px">≈ ' + fmtHours(hrs) + ' of your life</span>' : '');
+    verdictBtn.style.display = 'inline-block';
+    emptyBtn.style.display = 'inline-block';
+  }
+  emptyBtn.addEventListener('click', function(){
+    state.cart = [];
+    renderCart();
+    flash(toast, 'Cart emptied. Somewhere, a marketer felt a chill.', 3000);
+  });
+  verdictBtn.addEventListener('click', function(){
+    var t = cartTotals(), r = effRate();
+    if(r<=0){ flash(toast, 'Tell the shop what you make first. It cannot judge in a vacuum.', 3200); return; }
+    var h = t.total/r, msg;
+    if(h < 2) msg = fmtHours(h) + ' of work. Honestly? Fine. Treat yourself.';
+    else if(h < 8) msg = fmtHours(h) + '. Most of a workday. Your call, champ.';
+    else if(h < 40) msg = fmtHours(h) + '. That is serious desk time. Sleep on it.';
+    else msg = fmtHours(h) + ' of your life. We both already know the answer.';
+    if(t.subs > 0) msg += ' And ' + (t.subs===1?'one of these bills you':'some of these bill you') + ' monthly. Forever.';
+    flash(toast, msg, 5200);
+    if(h < 2 && !reduced){
+      var rect = verdictBtn.getBoundingClientRect();
+      burst(rect.left + rect.width/2, rect.top);
+    }
+  });
+
+  /* ---- confetti ---- */
+  var confetti = $('wi-confetti');
+  function burst(x, y){
+    if(reduced) return;
+    var colors = ['#FFD84D','#2E9E63','#1F1D1A','#8ED6C0','#E8896B'];
+    for(var i=0;i<24;i++){
+      var p = document.createElement('div');
+      var size = 5 + Math.random()*8;
+      p.style.cssText = 'position:absolute;left:'+x+'px;top:'+y+'px;width:'+size+'px;height:'+(size*(Math.random()>0.5?0.5:1))+'px;background:'+colors[i%colors.length]+';border-radius:'+(Math.random()>0.6?'50%':'2px')+';';
+      confetti.appendChild(p);
+      var ang = Math.random()*Math.PI*2, v = 70 + Math.random()*180;
+      p.animate([
+        { transform:'translate(0,0) rotate(0deg)', opacity:1 },
+        { transform:'translate('+(Math.cos(ang)*v)+'px,'+(Math.sin(ang)*v+150)+'px) rotate('+((Math.random()-0.5)*720)+'deg)', opacity:0 }
+      ], { duration:900+Math.random()*500, easing:'cubic-bezier(.15,.6,.4,1)' }).onfinish = function(){ this.effect.target.remove(); };
+    }
+  }
+
+  /* ---- init ---- */
+  renderPills();
+  renderToggle();
+  renderCart();
+
+  /* ---- scroll reveal ---- */
+  if(!reduced && 'IntersectionObserver' in window){
+    var els = [].slice.call(document.querySelectorAll('[data-reveal]'));
+    var io = new IntersectionObserver(function(entries){
+      entries.forEach(function(en){
+        if(!en.isIntersecting) return;
+        io.unobserve(en.target);
+        en.target.classList.remove('wi-hidden');
+        en.target.classList.add('wi-in');
+      });
+    }, { rootMargin:'0px 0px -8% 0px' });
+    els.forEach(function(el){
+      if(el.getBoundingClientRect().top > innerHeight){ el.classList.add('wi-hidden'); io.observe(el); }
+    });
+  }
+})();
+</script>
+</body>
+</html>
