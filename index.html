@@ -78,6 +78,10 @@
       linear-gradient(45deg, transparent 10px, #fff 10.5px) 0 0/24px 14px repeat-x;
     filter:drop-shadow(0 2.5px 0 var(--ink))}
 
+  /* the floating "hover a pill" note collides with the hero link on small
+     screens, and touch has no hover anyway */
+  @media (max-width:700px){ .wi-bobnote{display:none} }
+
   @media (prefers-reduced-motion:reduce){
     *{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}
     html{scroll-behavior:auto}
@@ -123,7 +127,7 @@
   <!-- INTERACTIVE SHOP -->
   <section id="shop" aria-label="Interactive demo: a fake shop with real math" style="max-width:1240px;margin:0 auto;padding:clamp(48px,7vw,88px) clamp(20px,5vw,56px) 20px;display:flex;justify-content:center">
     <div style="position:relative;width:min(860px,100%)">
-      <div aria-hidden="true" style="position:absolute;top:-46px;right:clamp(0px,4vw,24px);font-family:var(--mono);font-size:14px;color:var(--green-deep);animation:wi-bob 3s ease-in-out infinite;z-index:3">flip the switch, then hover a pill ↘</div>
+      <div aria-hidden="true" class="wi-bobnote" style="position:absolute;top:-46px;right:clamp(0px,4vw,24px);font-family:var(--mono);font-size:14px;color:var(--green-deep);animation:wi-bob 3s ease-in-out infinite;z-index:3">flip the switch, then hover a pill ↘</div>
 
       <button id="wi-toggle" class="wi-toggle" role="switch" aria-checked="false" aria-label="Worth it? extension toggle" style="position:absolute;top:-22px;left:clamp(0px,3vw,18px);z-index:3;display:flex;align-items:center;gap:10px;background:var(--cream);border:2px solid var(--ink);border-radius:999px;padding:8px 14px;cursor:pointer;font-family:var(--mono);font-size:13px;font-weight:500;box-shadow:3px 3px 0 var(--ink);transform:rotate(-2deg)">
         <span style="letter-spacing:1px">WORTH&nbsp;IT?</span>
@@ -508,7 +512,7 @@
     if(r<=0){ flash(toast, 'Tell the shop what you make first. It cannot judge in a vacuum.', 3200); return; }
     var h = t.total/r, msg;
     if(h < 2) msg = fmtHours(h) + ' of work. Honestly? Fine. Treat yourself.';
-    else if(h < 8) msg = fmtHours(h) + '. Most of a workday. Your call, champ.';
+    else if(h < 8) msg = fmtHours(h) + '. A real slice of your workday. Your call, champ.';
     else if(h < 40) msg = fmtHours(h) + '. That is serious desk time. Sleep on it.';
     else msg = fmtHours(h) + ' of your life. We both already know the answer.';
     if(t.subs > 0) msg += ' And ' + (t.subs===1?'one of these bills you':'some of these bill you') + ' monthly. Forever.';
